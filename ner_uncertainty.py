@@ -31,7 +31,5 @@ class AbstentionBertForSequenceClassification(BertForTokenClassification):
             return_dict=return_dict)
 
         a = output.logits.softmax(dim = 2).max(dim=2)
-        print(a[0])
-        exit(0)
         return output
 

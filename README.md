@@ -3,6 +3,6 @@
 ## Quickstart
 
 ```
-make setup
+pip install -r requirements.txt
 make
 ```
