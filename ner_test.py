@@ -19,6 +19,7 @@ Fine-tuning the library models for token classification.
 # You can also adapt this script on your own token classification task and datasets. Pointers for this are left as
 # comments.
 
+import torch
 import logging
 import os
 import sys
@@ -44,6 +45,8 @@ from transformers import (
 from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
+
+from ner_uncertainty import AbstentionBertForSequenceClassification
 
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
@@ -338,14 +341,16 @@ def main():
             use_auth_token=True if model_args.use_auth_token else None,
         )
 
-    model = AutoModelForTokenClassification.from_pretrained(
-        model_args.model_name_or_path,
-        from_tf=bool(".ckpt" in model_args.model_name_or_path),
-        config=config,
-        cache_dir=model_args.cache_dir,
-        revision=model_args.model_revision,
-        use_auth_token=True if model_args.use_auth_token else None,
-    )
+    # model = AutoModelForTokenClassification.from_pretrained(
+    #     model_args.model_name_or_path,
+    #     from_tf=bool(".ckpt" in model_args.model_name_or_path),
+    #     config=config,
+    #     cache_dir=model_args.cache_dir,
+    #     revision=model_args.model_revision,
+    #     use_auth_token=True if model_args.use_auth_token else None,
+    # )
+    model = AbstentionBertForSequenceClassification(config)
+    # model.load_state_dict(torch.load('models/' + model_args.model_name_or_path + '-pytorch_model.bin'))
 
     # Tokenizer check: this script requires a fast tokenizer.
     if not isinstance(tokenizer, PreTrainedTokenizerFast):

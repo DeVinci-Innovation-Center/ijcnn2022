@@ -1,1 +1,3 @@
-test-ner
+test-ner/
+__pycache__/
+models/
