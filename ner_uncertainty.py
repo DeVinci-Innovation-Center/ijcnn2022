@@ -7,7 +7,7 @@ import torch
 class AbstentionBertForSequenceClassification(BertForTokenClassification):
     def __init__(self, config, abst_meth: str):
         super().__init__(config)
-        self.lamb = 1e-2 # FIXME
+        self.lamb = 10. # FIXME
         self.abst_method = abst_meth
 
 

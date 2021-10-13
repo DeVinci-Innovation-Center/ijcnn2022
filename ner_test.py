@@ -496,23 +496,24 @@ def main():
 
         clean_raw_predictions = np.array(_clean_raw_predictions)
         clean_raw_labels      = np.array(_clean_raw_labels)
-
-        print(clean_raw_labels[0])
-        print(clean_raw_predictions[0])
-
-        print(clean_raw_predictions.shape)
-        print(clean_raw_labels.shape)
-
         
+        # with open("output_test.csv", "w") as fh:
+        #     for 
+        idx = 0
+        lb = true_labels[idx]
+        pr = true_predictions[idx]
+
+        print(lb)
+        print(pr)
+        #CONTINUE
+        exit(0)
+
         results = metric.compute(predictions=true_predictions, references=true_labels)
 
         # print(predictions[0])
 
         predictions = np.array(predictions)
         labels      = np.array(labels)
-        # predictions = MultiLabelBinarizer().fit_transform(predictions)
-        # labels = MultiLabelBinarizer().fit_transform(labels)
-
         
         auc = skm.roc_auc_score(clean_raw_labels, softmax(clean_raw_predictions, axis=1), multi_class='ovo')
 
