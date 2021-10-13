@@ -5,10 +5,10 @@ import torch
 
 
 class AbstentionBertForSequenceClassification(BertForTokenClassification):
-    def __init__(self, config):
+    def __init__(self, config, abst_meth: str):
         super().__init__(config)
         self.lamb = 1e-2 # FIXME
-        self.abst_method = "immediate" # FIXME
+        self.abst_method = abst_meth
 
 
     def forward(self, 
@@ -36,12 +36,14 @@ class AbstentionBertForSequenceClassification(BertForTokenClassification):
             return_dict=return_dict)
 
         # outputs: [Batch_norm, SequenceLength, NClasses]
+        
 
 
         if labels is not None:
             if self.abst_method is "immediate":
                 confidence, prediction = output.logits.softmax(dim = 2).max(dim=2)
-                #! ATTENTION: Implicit Sum aggregator with torch.masked_select
+                #!!! WARNING: Implicit Sum aggregator with torch.masked_select
+                #TODO: test out moy, or others
                 correctness = (prediction == labels)
                 correct_confidence = torch.masked_select(confidence, correctness)
                 wrong_confidence = torch.masked_select(confidence, ~correctness)

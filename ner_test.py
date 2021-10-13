@@ -354,7 +354,7 @@ def main():
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
-    model = AbstentionBertForSequenceClassification(config)
+    model = AbstentionBertForSequenceClassification(config, abst_meth = model_args.abstention_method)
     model.load_state_dict(model_auto.state_dict())
 
     # Tokenizer check: this script requires a fast tokenizer.
@@ -452,11 +452,17 @@ def main():
 
     # Metrics
     metric = load_metric("seqeval")
+    import numpy as np
+    from sklearn import metrics as skm
+    from scipy.special import softmax
+    from sklearn.preprocessing import MultiLabelBinarizer
 
     def compute_metrics(p):
-        predictions, labels = p
-        predictions = np.argmax(predictions, axis=2)
+        predictions, labels     = p
+        raw_predictions         = predictions
+        predictions             = np.argmax(predictions, axis=2)
 
+       
         # Remove ignored index (special tokens)
         true_predictions = [
             [label_list[p] for (p, l) in zip(prediction, label) if l != -100]
@@ -467,7 +473,49 @@ def main():
             for prediction, label in zip(predictions, labels)
         ]
 
+
+        clean_raw_predictions = [ # keep softmax scores, remove -100 labels
+             [p.tolist() for (p, l) in zip(prediction, label) if l != -100]
+             for prediction, label in zip(raw_predictions, labels)
+        ]
+
+        clean_raw_labels = [ # keep softmax scores, remove -100 labels
+             [l for (p, l) in zip(prediction, label) if l != -100]
+             for prediction, label in zip(raw_predictions, labels)
+        ]
+         
+        _clean_raw_predictions = []
+        for batch in clean_raw_predictions:
+            for pred in batch:
+                _clean_raw_predictions.append(pred)
+
+        _clean_raw_labels = []
+        for batch in clean_raw_labels:
+            for label in batch:
+                _clean_raw_labels.append(label)
+
+        clean_raw_predictions = np.array(_clean_raw_predictions)
+        clean_raw_labels      = np.array(_clean_raw_labels)
+
+        print(clean_raw_labels[0])
+        print(clean_raw_predictions[0])
+
+        print(clean_raw_predictions.shape)
+        print(clean_raw_labels.shape)
+
+        
         results = metric.compute(predictions=true_predictions, references=true_labels)
+
+        # print(predictions[0])
+
+        predictions = np.array(predictions)
+        labels      = np.array(labels)
+        # predictions = MultiLabelBinarizer().fit_transform(predictions)
+        # labels = MultiLabelBinarizer().fit_transform(labels)
+
+        
+        auc = skm.roc_auc_score(clean_raw_labels, softmax(clean_raw_predictions, axis=1), multi_class='ovo')
+
         if data_args.return_entity_level_metrics:
             # Unpack nested dictionaries
             final_results = {}
@@ -480,6 +528,7 @@ def main():
             return final_results
         else:
             return {
+                "auc": auc,
                 "precision": results["overall_precision"],
                 "recall": results["overall_recall"],
                 "f1": results["overall_f1"],
