@@ -1,4 +1,8 @@
+datasets
+netcal
+scipy
 transformers
 numpy
-datasets
-seqeval
+dataclasses
+scikit_learn
+torch
