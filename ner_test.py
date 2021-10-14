@@ -46,7 +46,7 @@ from transformers.trainer_utils import get_last_checkpoint
 from transformers.utils import check_min_version
 from transformers.utils.versions import require_version
 
-from ner_uncertainty import AbstentionBertForSequenceClassification
+from ner_uncertainty import AbstentionBertForTokenClassification
 
 
 # Will error if the minimal version of Transformers is not installed. Remove at your own risks.
@@ -354,7 +354,7 @@ def main():
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
-    model = AbstentionBertForSequenceClassification(config, abst_meth = model_args.abstention_method)
+    model = AbstentionBertForTokenClassification(config, abst_meth = model_args.abstention_method)
     model.load_state_dict(model_auto.state_dict())
 
     # Tokenizer check: this script requires a fast tokenizer.
@@ -453,6 +453,7 @@ def main():
     # Metrics
     metric = load_metric("seqeval")
     import numpy as np
+    from netcal.metrics import ECE
     from sklearn import metrics as skm
     from scipy.special import softmax
     from sklearn.preprocessing import MultiLabelBinarizer
@@ -483,6 +484,9 @@ def main():
              [l for (p, l) in zip(prediction, label) if l != -100]
              for prediction, label in zip(raw_predictions, labels)
         ]
+
+        # -------- cut here ------------
+        # begin custom evals
          
         _clean_raw_predictions = []
         for batch in clean_raw_predictions:
@@ -497,16 +501,24 @@ def main():
         clean_raw_predictions = np.array(_clean_raw_predictions)
         clean_raw_labels      = np.array(_clean_raw_labels)
         
-        # with open("output_test.csv", "w") as fh:
-        #     for 
-        idx = 0
-        lb = true_labels[idx]
-        pr = true_predictions[idx]
 
-        print(lb)
-        print(pr)
+        with open(os.path.join(training_args.output_dir, 'eval_predict.csv'), "w") as fh:
+            fh.write('WORD\tPREDICTION\tSCORE\tGROUND_TRUTH\n')
+            for idx in range(len(eval_dataset)):
+
+                for tkid, tk in enumerate(eval_dataset[idx]['tokens']):
+                    # print(eval_dataset[idx])
+                    pp = softmax(np.array(raw_predictions[idx][tkid])).max()
+                    lb = true_labels[idx][tkid]
+                    pr = true_predictions[idx][tkid]
+
+                    # print(lb)
+                    # print(pp)
+                    # print(pr)
+                    # print('==========')
+                    fh.write(f'{tk}\t{pr}\t{pp}\t{lb}\n')
         #CONTINUE
-        exit(0)
+        
 
         results = metric.compute(predictions=true_predictions, references=true_labels)
 
@@ -516,6 +528,8 @@ def main():
         labels      = np.array(labels)
         
         auc = skm.roc_auc_score(clean_raw_labels, softmax(clean_raw_predictions, axis=1), multi_class='ovo')
+
+        ece = ECE(bins=10).measure(clean_raw_predictions, clean_raw_labels)
 
         if data_args.return_entity_level_metrics:
             # Unpack nested dictionaries
@@ -529,6 +543,7 @@ def main():
             return final_results
         else:
             return {
+                "ece": ece,
                 "auc": auc,
                 "precision": results["overall_precision"],
                 "recall": results["overall_recall"],
