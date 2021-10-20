@@ -70,6 +70,10 @@ class ModelArguments:
         default='none', 
         metadata={'help': "Set the abstention method that should be used in training, use 'none', 'immediate'"}
     )
+    lamb: Optional[float] = field(
+        default=5e-2, 
+        metadata={'help': "When abstention_method is set to immediate, used to scale the regularisation loss"}
+    )
     config_name: Optional[str] = field(
         default=None, metadata={"help": "Pretrained config name or path if not the same as model_name"}
     )
@@ -354,7 +358,7 @@ def main():
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
-    model = AbstentionBertForTokenClassification(config, abst_meth = model_args.abstention_method)
+    model = AbstentionBertForTokenClassification(config, abst_meth = model_args.abstention_method, lamb = model_args.lamb)
     model.load_state_dict(model_auto.state_dict())
 
     # Tokenizer check: this script requires a fast tokenizer.

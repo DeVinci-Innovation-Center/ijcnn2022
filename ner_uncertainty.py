@@ -5,9 +5,9 @@ import torch
 
 
 class AbstentionBertForTokenClassification(BertForTokenClassification):
-    def __init__(self, config, abst_meth: str):
+    def __init__(self, config, abst_meth: str, lamb: float = 5e-2):
         super().__init__(config)
-        self.lamb = 10. # FIXME
+        self.lamb = lamb
         self.abst_method = abst_meth
 
 
@@ -40,8 +40,9 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
 
 
         if labels is not None:
-            if self.abst_method is "immediate":
+            if self.abst_method == "immediate":
                 confidence, prediction = output.logits.softmax(dim = 2).max(dim=2)
+                # batch, example, proba
                 #!!! WARNING: Implicit Sum aggregator with torch.masked_select
                 #TODO: test out moy, or others
                 correctness = (prediction == labels)
