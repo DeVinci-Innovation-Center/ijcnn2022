@@ -11,6 +11,46 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
         self.abst_method = abst_meth
 
 
+    def loss_abstention(self, confidence, prediction, labels):
+        # batch, example, proba
+        #!!! WARNING: Implicit Sum aggregator with torch.masked_select
+        #TODO: test out moy, or others
+        
+        correctness = (prediction == labels)
+        correct_confidence = torch.masked_select(confidence, correctness)
+        wrong_confidence = torch.masked_select(confidence, ~correctness)
+        regularizer = 0
+        for cc in correct_confidence:
+            for wc in wrong_confidence:
+                regularizer += torch.clamp(wc-cc, min=0) ** 2
+        return self.lamb * regularizer
+
+    def loss_avuc(self, confidence, prediction, labels):
+        uth = 5e-4 # FIXME too high: loss crash, moving average?
+                
+        uncertainty = 1 - confidence #? can also use other methods: entropy variance etc...
+        correctness = (prediction == labels)
+        certainty = (uncertainty < uth)
+
+        ac_p = torch.masked_select(confidence,   torch.logical_and(correctness, certainty))
+        ac_u = torch.masked_select(uncertainty,  torch.logical_and(correctness, certainty))
+
+        au_p = torch.masked_select(confidence,   torch.logical_and(correctness, ~certainty))
+        au_u = torch.masked_select(uncertainty,  torch.logical_and(correctness, ~certainty))
+
+        ic_p = torch.masked_select(confidence,   torch.logical_and(~correctness,  certainty))
+        ic_u = torch.masked_select(uncertainty,  torch.logical_and(~correctness,  certainty))
+        
+        iu_p = torch.masked_select(confidence,   torch.logical_and(~correctness, ~certainty))
+        iu_u = torch.masked_select(uncertainty,  torch.logical_and(~correctness, ~certainty))
+
+        nac = torch.sum(ac_p * (1 - torch.tanh(ac_u)))
+        nau = torch.sum(au_p * torch.tanh(au_u))
+        nic = torch.sum( (1 - ic_p) * (1 - torch.tanh(ic_u)))
+        niu = torch.sum( (1 - iu_p) * torch.tanh(iu_u))
+
+        return torch.log(1 + ( (nau + nic) / (nac + niu) ))
+
     def forward(self, 
         input_ids=None,
         attention_mask=None,
@@ -41,46 +81,13 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
             confidence, prediction = output.logits.softmax(dim = 2).max(dim=2)
 
             if self.abst_method == "avuc":
-                uth = 5e-4 # FIXME too high: loss crash, moving average?
-                
-                uncertainty = 1 - confidence #? can also use other methods: entropy variance etc...
-                correctness = (prediction == labels)
-                certainty = (uncertainty < uth)
-
-                ac_p = torch.masked_select(confidence,   torch.logical_and(correctness, certainty))
-                ac_u = torch.masked_select(uncertainty,  torch.logical_and(correctness, certainty))
-
-                au_p = torch.masked_select(confidence,   torch.logical_and(correctness, ~certainty))
-                au_u = torch.masked_select(uncertainty,  torch.logical_and(correctness, ~certainty))
-
-                ic_p = torch.masked_select(confidence,   torch.logical_and(~correctness,  certainty))
-                ic_u = torch.masked_select(uncertainty,  torch.logical_and(~correctness,  certainty))
-                
-                iu_p = torch.masked_select(confidence,   torch.logical_and(~correctness, ~certainty))
-                iu_u = torch.masked_select(uncertainty,  torch.logical_and(~correctness, ~certainty))
-
-                nac = torch.sum(ac_p * (1 - torch.tanh(ac_u)))
-                nau = torch.sum(au_p * torch.tanh(au_u))
-                nic = torch.sum( (1 - ic_p) * (1 - torch.tanh(ic_u)))
-                niu = torch.sum( (1 - iu_p) * torch.tanh(iu_u))
-
-                l_avuc = torch.log(1 + ( (nau + nic) / (nac + niu) ))
-                output.loss += l_avuc
-
+                output.loss += self.loss_avuc(confidence, prediction, labels)
 
             if self.abst_method == "immediate":
-                # batch, example, proba
-                #!!! WARNING: Implicit Sum aggregator with torch.masked_select
-                #TODO: test out moy, or others
-                
-                correctness = (prediction == labels)
-                correct_confidence = torch.masked_select(confidence, correctness)
-                wrong_confidence = torch.masked_select(confidence, ~correctness)
-                regularizer = 0
-                for cc in correct_confidence:
-                    for wc in wrong_confidence:
-                        regularizer += torch.clamp(wc-cc, min=0) ** 2
-                output.loss += self.lamb * regularizer
+                output.loss += self.loss_abstention(confidence, prediction, labels)
+
+            if self.abst_method == "combination":
+                output.loss += self.loss_abstention(confidence, prediction, labels) + self.loss_avuc(confidence, prediction, labels)
 
 
         return output
