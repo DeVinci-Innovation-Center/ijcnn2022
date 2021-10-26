@@ -40,11 +40,41 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
 
 
         if labels is not None:
+            confidence, prediction = output.logits.softmax(dim = 2).max(dim=2)
+
+            if self.abst_method == "avuc":
+                uth = .5 # FIXME
+                
+                uncertainty = 1 - confidence
+                correctness = (prediction == labels)
+                certainty = (uncertainty < uth)
+
+                ac_p = torch.masked_select(confidence,   torch.logical_and(correctness, certainty))
+                ac_u = torch.masked_select(uncertainty,  torch.logical_and(correctness, certainty))
+
+                au_p = torch.masked_select(confidence,   torch.logical_and(correctness, ~certainty))
+                au_u = torch.masked_select(uncertainty,  torch.logical_and(correctness, ~certainty))
+
+                ic_p = torch.masked_select(confidence,  torch.logical_and(~correctness,  certainty))
+                ic_u = torch.masked_select(uncertainty, torch.logical_and(~correctness,  certainty))
+                
+                iu_p = torch.masked_select(confidence,  torch.logical_and(~correctness, ~certainty))
+                iu_u = torch.masked_select(uncertainty, torch.logical_and(~correctness, ~certainty))
+
+                nac = torch.sum(ac_p * (1 - torch.tanh(ac_u)))
+                nau = torch.sum(au_p * torch.tanh(au_u))
+                nic = torch.sum( (1 - ic_p) * (1 - torch.tanh(ic_u)))
+                niu = torch.sum( (1 - iu_p) * torch.tanh(iu_u))
+
+                l_avuc = torch.log(1 + ( (nau + nic) / (nac + niu) ))
+                output.loss += l_avuc
+
+
             if self.abst_method == "immediate":
-                confidence, prediction = output.logits.softmax(dim = 2).max(dim=2)
                 # batch, example, proba
                 #!!! WARNING: Implicit Sum aggregator with torch.masked_select
                 #TODO: test out moy, or others
+                
                 correctness = (prediction == labels)
                 correct_confidence = torch.masked_select(confidence, correctness)
                 wrong_confidence = torch.masked_select(confidence, ~correctness)
