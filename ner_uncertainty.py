@@ -37,15 +37,13 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
 
         # outputs: [Batch_norm, SequenceLength, NClasses]
         
-
-
         if labels is not None:
             confidence, prediction = output.logits.softmax(dim = 2).max(dim=2)
 
             if self.abst_method == "avuc":
-                uth = .5 # FIXME
+                uth = 5e-4 # FIXME too high: loss crash, moving average?
                 
-                uncertainty = 1 - confidence
+                uncertainty = 1 - confidence #? can also use other methods: entropy variance etc...
                 correctness = (prediction == labels)
                 certainty = (uncertainty < uth)
 
@@ -55,11 +53,11 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
                 au_p = torch.masked_select(confidence,   torch.logical_and(correctness, ~certainty))
                 au_u = torch.masked_select(uncertainty,  torch.logical_and(correctness, ~certainty))
 
-                ic_p = torch.masked_select(confidence,  torch.logical_and(~correctness,  certainty))
-                ic_u = torch.masked_select(uncertainty, torch.logical_and(~correctness,  certainty))
+                ic_p = torch.masked_select(confidence,   torch.logical_and(~correctness,  certainty))
+                ic_u = torch.masked_select(uncertainty,  torch.logical_and(~correctness,  certainty))
                 
-                iu_p = torch.masked_select(confidence,  torch.logical_and(~correctness, ~certainty))
-                iu_u = torch.masked_select(uncertainty, torch.logical_and(~correctness, ~certainty))
+                iu_p = torch.masked_select(confidence,   torch.logical_and(~correctness, ~certainty))
+                iu_u = torch.masked_select(uncertainty,  torch.logical_and(~correctness, ~certainty))
 
                 nac = torch.sum(ac_p * (1 - torch.tanh(ac_u)))
                 nau = torch.sum(au_p * torch.tanh(au_u))
