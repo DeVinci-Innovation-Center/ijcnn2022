@@ -1,8 +1,8 @@
-.PHONY: all setup
+.PHONY: all setup test
 default: all
 
 BATCH_SIZE=1
-LAMB=0.25
+# LAMB=0.25
 
 # DATASET=conll2003
 DATASET=wikiann --dataset_config_name en

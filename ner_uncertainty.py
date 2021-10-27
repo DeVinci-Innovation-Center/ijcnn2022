@@ -2,19 +2,21 @@ from transformers.modeling_outputs import TokenClassifierOutput
 from transformers.models.bert import BertForTokenClassification
 import torch
 
-
+def entropy(ten: torch.Tensor, dim: int):
+    return -1 * torch.sum(ten.log()*ten, dim=dim)
 
 class AbstentionBertForTokenClassification(BertForTokenClassification):
     def __init__(self, config, abst_meth: str, lamb: float = 5e-2):
         super().__init__(config)
         self.lamb = lamb
         self.abst_method = abst_meth
+        self.uth = 5e-4 # FIXME too high: loss crash, moving average?
 
 
     def loss_abstention(self, confidence, prediction, labels):
         # batch, example, proba
         #!!! WARNING: Implicit Sum aggregator with torch.masked_select
-        #TODO: test out moy, or others
+        #TODO: test out mean, or others
         
         correctness = (prediction == labels)
         correct_confidence = torch.masked_select(confidence, correctness)
@@ -25,12 +27,13 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
                 regularizer += torch.clamp(wc-cc, min=0) ** 2
         return self.lamb * regularizer
 
-    def loss_avuc(self, confidence, prediction, labels):
-        uth = 5e-4 # FIXME too high: loss crash, moving average?
-                
-        uncertainty = 1 - confidence #? can also use other methods: entropy variance etc...
+    def loss_avuc(self, probas: torch.Tensor, confidence: torch.Tensor, prediction: torch.Tensor, labels: torch.Tensor):
+        # uncertainty = 1 - confidence #? can also use other methods: entropy variance etc...
+        uncertainty = entropy(probas, 2) # Probas is (B, S, P)
+        self.uth = uncertainty.median() * self.lamb #1e-1
+
         correctness = (prediction == labels)
-        certainty = (uncertainty < uth)
+        certainty = (uncertainty < self.uth)
 
         ac_p = torch.masked_select(confidence,   torch.logical_and(correctness, certainty))
         ac_u = torch.masked_select(uncertainty,  torch.logical_and(correctness, certainty))
@@ -38,8 +41,8 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
         au_p = torch.masked_select(confidence,   torch.logical_and(correctness, ~certainty))
         au_u = torch.masked_select(uncertainty,  torch.logical_and(correctness, ~certainty))
 
-        ic_p = torch.masked_select(confidence,   torch.logical_and(~correctness,  certainty))
-        ic_u = torch.masked_select(uncertainty,  torch.logical_and(~correctness,  certainty))
+        ic_p = torch.masked_select(confidence,   torch.logical_and(~correctness, certainty))
+        ic_u = torch.masked_select(uncertainty,  torch.logical_and(~correctness, certainty))
         
         iu_p = torch.masked_select(confidence,   torch.logical_and(~correctness, ~certainty))
         iu_u = torch.masked_select(uncertainty,  torch.logical_and(~correctness, ~certainty))
@@ -78,16 +81,19 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
         # outputs: [Batch_norm, SequenceLength, NClasses]
         
         if labels is not None:
-            confidence, prediction = output.logits.softmax(dim = 2).max(dim=2)
+            probas = output.logits.softmax(dim = 2)
+            confidence, prediction = probas.max(dim=2)
 
             if self.abst_method == "avuc":
-                output.loss += self.loss_avuc(confidence, prediction, labels)
+                output.loss += self.loss_avuc(probas, confidence, prediction, labels)
 
             if self.abst_method == "immediate":
                 output.loss += self.loss_abstention(confidence, prediction, labels)
 
             if self.abst_method == "combination":
-                output.loss += self.loss_abstention(confidence, prediction, labels) + self.loss_avuc(confidence, prediction, labels)
+                c = self.loss_abstention(confidence, prediction, labels) + self.loss_avuc(probas, confidence, prediction, labels)
+                c *= 1e-1 # simple scaling, put in parameters
+                output.loss += c
 
 
         return output
