@@ -13,6 +13,16 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
         self.uth = 5e-4 # FIXME too high: loss crash, moving average?
 
 
+    def loss_miss_labels_recall(self, confidence, prediction, labels):
+        O_LABEL = 0 # O label lebel int
+
+        o_labels = (labels == O_LABEL)
+        correctness = (prediction == labels)
+        missed_labels = torch.logical_and(~o_labels, ~correctness)
+        missed_confidence = torch.masked_select(confidence, missed_labels)
+
+        return self.lamb * torch.exp(-1 * missed_confidence).sum()
+
     def loss_abstention(self, confidence, prediction, labels):
         # batch, example, proba
         #!!! WARNING: Implicit Sum aggregator with torch.masked_select
@@ -64,7 +74,8 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
         labels=None,
         output_attentions=None,
         output_hidden_states=None,
-        return_dict=None):
+        return_dict=None,
+        **kwargs):
         
         output: TokenClassifierOutput = super().forward(
             input_ids=input_ids,
@@ -85,10 +96,29 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
             confidence, prediction = probas.max(dim=2)
 
             if self.abst_method == "avuc":
-                output.loss += self.loss_avuc(probas, confidence, prediction, labels)
+                output.loss += self.loss_avuc(probas, confidence, prediction, labels) + self.loss_miss_labels_recall(confidence, prediction, labels)
 
             if self.abst_method == "immediate":
-                output.loss += self.loss_abstention(confidence, prediction, labels)
+                output.loss += self.loss_abstention(confidence, prediction, labels) + self.loss_miss_labels_recall(confidence, prediction, labels)
+
+            if self.abst_method == "history":
+                 if self.training:
+                    batch_size = input_ids.size()[0]
+                    # here correctness is continuous in [0,1]
+
+                    correctness = kwargs['history_record']
+                    _, sorted_correctness_index = torch.sort(correctness)
+                    lower_index = sorted_correctness_index[:int(0.2 * batch_size)]
+                    higher_index = sorted_correctness_index[int(0.2 * batch_size):]
+                    regularizer = 0
+                    for li in lower_index:  # indices with lower correctness
+                        for hi in higher_index:
+                            if correctness[li] < correctness[hi]:
+                                # only if it's strictly smaller
+                                regularizer += torch.clamp(
+                                    confidence[li] - confidence[hi], min=0
+                                ) ** 2
+
 
             if self.abst_method == "combination":
                 c = self.loss_abstention(confidence, prediction, labels) + self.loss_avuc(probas, confidence, prediction, labels)
