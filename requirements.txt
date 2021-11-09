@@ -1,8 +1,9 @@
-datasets
-netcal
-scipy
-transformers
-numpy
-dataclasses
-scikit_learn
-torch
+numpy==1.21.2
+matplotlib==3.4.1
+~orch==1.8.1
+netcal==1.2.1
+scipy==1.6.2
+transformers==4.11.3
+dataclasses==0.8
+scikit_learn==1.0.1
+torch==1.10.0

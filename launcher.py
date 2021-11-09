@@ -34,7 +34,8 @@ def launch(dataset, method, lamb, batch_size=8, model="bert-base-uncased", out='
 
     line = f'python ner_test.py {dataset_args} {meta_args} {method_args} {model_args} {other_args}'
     proc = Popen(line.split(' '), stdout=None, stderr=None, bufsize=0) # bufsize is for tqdm
-    proc.wait()
+    if proc.wait() != 0:
+        exit(1)
 
 
 if __name__ == '__main__':
