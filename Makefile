@@ -2,7 +2,7 @@
 default: all
 
 BATCH_SIZE=1
-# LAMB=0.25
+# LAMB=0.25 #Default 0.25 use LAMB=VALUE make ...
 
 # DATASET=conll2003
 DATASET=wikiann --dataset_config_name en
@@ -25,6 +25,8 @@ train-avuc: setup
 train-combination: setup
 	python3 ner_test.py --save_strategy epoch --lamb=${LAMB} --per_device_train_batch_size ${BATCH_SIZE} --model_name_or_path bert-base-uncased --abstention_method combination --dataset_name ${DATASET} --output_dir ./test/test-ner-combination --do_train --do_eval
 
+train-history: setup
+	python3 ner_test.py --save_strategy epoch --lamb=${LAMB} --per_device_train_batch_size ${BATCH_SIZE} --model_name_or_path bert-base-uncased --abstention_method history --dataset_name ${DATASET} --output_dir ./test/test-ner-combination --do_train --do_eval
 
 
 eval-none:

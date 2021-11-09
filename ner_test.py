@@ -289,12 +289,15 @@ def main():
     else:
         text_column_name = column_names[0]
 
+  
     if data_args.label_column_name is not None:
         label_column_name = data_args.label_column_name
     elif f"{data_args.task_name}_tags" in column_names:
         label_column_name = f"{data_args.task_name}_tags"
     else:
         label_column_name = column_names[1]
+    # print(column_names)
+    # exit(0)
 
     # In the event the labels are not a `Sequence[ClassLabel]`, we will need to go through the dataset to get the
     # unique labels.
