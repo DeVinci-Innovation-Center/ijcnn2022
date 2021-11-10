@@ -6,7 +6,7 @@ import os
 import sys
 import shutil
 
-DATASETS = ['conll2003', 'ncbi_disease', 'wikiann', 'GUM', 're3d', 'WNUT17']
+DATASETS = ['conll2003', 'ncbi_disease', 'wikiann', 'GUM', 'wnut_17']
 
 
 def launch(dataset, method, lamb, batch_size=8, model="bert-base-uncased", out='test/latest'):
