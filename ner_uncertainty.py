@@ -95,13 +95,14 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
             probas = output.logits.softmax(dim = 2)
             confidence, prediction = probas.max(dim=2)
 
-            supplement_loss = self.loss_miss_labels_recall(confidence, prediction, labels) if "recall" in self.abst_method else 0.
+            if "recall" in self.abst_method:
+                output.loss += self.loss_miss_labels_recall(confidence, prediction, labels)
 
             if "avuc" in self.abst_method:
-                output.loss += self.loss_avuc(probas, confidence, prediction, labels) + supplement_loss
+                output.loss += self.loss_avuc(probas, confidence, prediction, labels)
 
             if "immediate" in self.abst_method:
-                output.loss += self.loss_abstention(confidence, prediction, labels) + supplement_loss
+                output.loss += self.loss_abstention(confidence, prediction, labels)
 
             if self.abst_method == "history":
                  if self.training:
