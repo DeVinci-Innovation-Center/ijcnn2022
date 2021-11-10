@@ -3,9 +3,10 @@ from subprocess import PIPE, Popen
 
 import datetime
 import os
+import sys
 import shutil
 
-DATASETS = ['dfki-nlp/few-nerd', 'ncbi_disease', 'wikiann', 'GUM', 're3d', 'WNUT17']
+DATASETS = ['conll2003', 'ncbi_disease', 'wikiann', 'GUM', 're3d', 'WNUT17']
 
 
 def launch(dataset, method, lamb, batch_size=8, model="bert-base-uncased", out='test/latest'):
@@ -18,7 +19,7 @@ def launch(dataset, method, lamb, batch_size=8, model="bert-base-uncased", out='
         shutil.rmtree('test/latest')
 
     if os.path.isdir(f'datasets/{dataset}'):
-        dataset_args = f'--train_file datasets/{dataset}/train.json --test_file datasets/{dataset}/test.json'
+        dataset_args = f'--train_file datasets/{dataset}/train.json --validation_file datasets/{dataset}/test.json'
     else:
         dataset_args = f'--dataset_name {dataset}'
         if dataset == 'wikiann':
@@ -32,7 +33,7 @@ def launch(dataset, method, lamb, batch_size=8, model="bert-base-uncased", out='
     method_args= f'--lamb={lamb} --abstention_method {method}'
     other_args = f'--output_dir {out} --do_train --do_eval'
 
-    line = f'python ner_test.py {dataset_args} {meta_args} {method_args} {model_args} {other_args}'
+    line = f'{sys.executable} ner_test.py {dataset_args} {meta_args} {method_args} {model_args} {other_args}'
     proc = Popen(line.split(' '), stdout=None, stderr=None, bufsize=0) # bufsize is for tqdm
     if proc.wait() != 0:
         exit(1)

@@ -513,7 +513,8 @@ def main():
             fh.write('WORD\tPREDICTION\tSCORE\tGROUND_TRUTH\n')
             for idx in range(len(eval_dataset)):
 
-                for tkid, tk in enumerate(eval_dataset[idx]['tokens']):
+                k = "tokens" if "tokens" in eval_dataset[idx] else "words"
+                for tkid, tk in enumerate(eval_dataset[idx][k]):
                     # print(eval_dataset[idx])
                     pp = softmax(np.array(raw_predictions[idx][tkid])).max()
                     lb = true_labels[idx][tkid]
@@ -536,7 +537,7 @@ def main():
         
         auc = skm.roc_auc_score(clean_raw_labels, softmax(clean_raw_predictions, axis=1), multi_class='ovo')
 
-        ece = ECE(bins=10).measure(clean_raw_predictions, clean_raw_labels)
+        ece = ECE(bins=20).measure(softmax(clean_raw_predictions, axis=1), clean_raw_labels)
 
         if data_args.return_entity_level_metrics:
             # Unpack nested dictionaries
