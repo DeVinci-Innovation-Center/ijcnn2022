@@ -6,7 +6,7 @@ def r(n):
         return json.loads(fh.read())["eval_ece"]
 
 
-dta = [0.3, 0.35, 0.4, 0.45]
+dta = [0.01, 0.025, 0.05, 0.075, 0.1]
 
 plt.plot(dta, [r(i) for i in dta])
 plt.title("ECE by scaler")

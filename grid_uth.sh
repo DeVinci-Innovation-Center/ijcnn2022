@@ -1,9 +1,9 @@
 #!/bin/bash
 
-for scale in 0.03 0.035 0.04 0.045
+for scale in 0.01 0.025 0.05 0.075 0.1
 do 
-    LAMB=${scale} make clean train-immediate
-    mv ./test/test-ner-immediate save/custom_grid/${scale}_result
+    python launcher.py -d GUM -m recall -l ${scale} -o test/grid -b 8
+    mv ./test/grid save/custom_grid/${scale}_result
 done
 
 #0.01 0.25 0.5 0.75 

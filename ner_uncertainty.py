@@ -21,7 +21,7 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
         missed_labels = torch.logical_and(~o_labels, ~correctness)
         missed_confidence = torch.masked_select(confidence, missed_labels)
 
-        return self.lamb * torch.exp(-1 * missed_confidence).sum()
+        return self.lamb * (torch.exp(missed_confidence) - 1.).sum()
 
     def loss_abstention(self, confidence, prediction, labels):
         # batch, example, proba

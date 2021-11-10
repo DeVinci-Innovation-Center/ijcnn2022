@@ -516,10 +516,12 @@ def main():
                 k = "tokens" if "tokens" in eval_dataset[idx] else "words"
                 for tkid, tk in enumerate(eval_dataset[idx][k]):
                     # print(eval_dataset[idx])
-                    pp = softmax(np.array(raw_predictions[idx][tkid])).max()
-                    lb = true_labels[idx][tkid]
-                    pr = true_predictions[idx][tkid]
-
+                    try:
+                        pp = softmax(np.array(raw_predictions[idx][tkid])).max()
+                        lb = true_labels[idx][tkid]
+                        pr = true_predictions[idx][tkid]
+                    except:
+                        continue
                     # print(lb)
                     # print(pp)
                     # print(pr)
