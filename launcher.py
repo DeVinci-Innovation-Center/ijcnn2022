@@ -44,13 +44,14 @@ if __name__ == '__main__':
 
     parser.add_argument('-d', '--dataset', help="Dataset name, either hf or in dataset fodler")
     parser.add_argument('-m', '--method', help="Downstream as abstention method")
-    parser.add_argument('-l', '--lamb', type=float, help='Passed downscale as the scaler')
+    parser.add_argument('-l', '--lamb', type=float, help='Passed downstream as the scaler')
     parser.add_argument('-o', '--output', help='Output folder', default="test/latest")
     parser.add_argument('-b', '--batch_size', default=8, type=int)
 
     args = parser.parse_args()
     if args.dataset == 'cycle':
         for dataset in DATASETS:
+            #for lamb in linspace(...)
             launch(dataset, args.method, args.lamb, out=f'{args.output}/{dataset}', batch_size=args.batch_size)
     else:
         launch(args.dataset, args.method, args.lamb, out=args.output, batch_size=args.batch_size)
