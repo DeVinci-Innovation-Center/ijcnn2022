@@ -28,12 +28,13 @@ def launch(dataset, method, lamb, batch_size=8, model="bert-base-uncased", out='
             dataset_args += ' --dataset_config_name supervised'
 
 
-    meta_args  = f'--save_strategy epoch --per_device_train_batch_size {batch_size}'
+    meta_args  = f'--save_strategy no --save_steps 0 --no_dataloader_pin_memory --dataloader_num_workers 24 --per_device_train_batch_size {batch_size}'
     model_args = f'--model_name_or_path {model}'
     method_args= f'--lamb={lamb} --abstention_method {method}'
     other_args = f'--output_dir {out} --do_train --do_eval'
 
     line = f'{sys.executable} ner_test.py {dataset_args} {meta_args} {method_args} {model_args} {other_args}'
+    print(line)
     proc = Popen(line.split(' '), stdout=None, stderr=None, bufsize=0) # bufsize is for tqdm
     if proc.wait() != 0:
         exit(1)
