@@ -103,7 +103,7 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
         # ''')
 
         l = torch.sum(correct_difficulty*correct_entropy) + torch.sum(1/incorrect_difficulty*incorrect_entropy)
-        l = torch.sum(torch.log(l))
+        l = torch.sum(torch.log(1+l))
 
         return self.lamb * l
 
