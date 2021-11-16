@@ -74,6 +74,10 @@ class ModelArguments:
         default=5e-2, 
         metadata={'help': "When abstention_method is set to immediate, used to scale the regularisation loss"}
     )
+    mc: Optional[int] = field(
+        default=1, 
+        metadata={'help': "Number of MC dropout samples"}
+    )
     config_name: Optional[str] = field(
         default=None, metadata={"help": "Pretrained config name or path if not the same as model_name"}
     )
@@ -87,6 +91,12 @@ class ModelArguments:
     model_revision: str = field(
         default="main",
         metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
+    )
+    freeze: bool = field(
+        default=False,
+        metadata={
+            "help": "Freeze the BERT model."
+        }
     )
     use_auth_token: bool = field(
         default=False,
@@ -361,8 +371,12 @@ def main():
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
-    model = AbstentionBertForTokenClassification(config, abst_meth = model_args.abstention_method, lamb = model_args.lamb)
-    model.load_state_dict(model_auto.state_dict())
+    model = AbstentionBertForTokenClassification(config, abst_meth = model_args.abstention_method, lamb = model_args.lamb, mc_samples=model_args.mc)
+    model.load_state_dict(model_auto.state_dict(), strict=False)
+
+    if model_args.freeze:
+        for p in model.bert.parameters():
+            p.requires_grad = False
 
     # Tokenizer check: this script requires a fast tokenizer.
     if not isinstance(tokenizer, PreTrainedTokenizerFast):
