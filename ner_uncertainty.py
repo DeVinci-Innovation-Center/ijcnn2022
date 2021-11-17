@@ -103,7 +103,8 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
         # ''')
 
         l = torch.sum(correct_difficulty*correct_entropy) + torch.sum(1/incorrect_difficulty*incorrect_entropy)
-        l = torch.sum(torch.log(1+l))
+        # print(l)
+        # l = torch.sum(torch.log(1+l))
 
         return self.lamb * l
 
@@ -141,7 +142,9 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
         output = TokenClassifierOutput(mean_loss, mean_logits)
         
         if labels is not None:
-            difficulty = torch.stack([entropy(i.logits.softmax(dim = 2), dim=2) for i in mc_samples]).mean(0)
+            # difficulty = torch.stack([entropy(i.logits.softmax(dim = 2), dim=2) for i in mc_samples]).std(0)
+            difficulty = torch.stack([i.logits for i in mc_samples]).std(0).sum(2)
+
             probas = output.logits.softmax(dim = 2)
             confidence, prediction = probas.max(dim=2)
 
