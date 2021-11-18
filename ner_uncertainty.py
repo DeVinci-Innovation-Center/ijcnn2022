@@ -81,6 +81,22 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
 
         return torch.log(1 + ( (nau + nic) / (nac + niu) ))
 
+    def loss_top2(self, probas, labels):
+        correctness = torch.argmax(probas, dim=2) == labels
+
+        cert = torch.topk(probas, 2, 2).values # batch, samples, 2
+        cert = (1 - (cert[:,:,0] - cert[:,:,1])) + (1 - cert[:,:,0])
+        cert_false = probas.std(2) + torch.pow((1/probas.shape[2] - probas.max(2).values), 2) #2 - cert
+
+        l    = torch.sum(torch.masked_select(cert, correctness))
+        lf   = torch.sum(torch.masked_select(cert_false, ~correctness))
+
+        # print(l)
+        # print(lf)
+        # exit(0)
+
+        return self.lamb * (l + lf)
+
     def loss_difficulty(self, difficulty, probas, labels):
         # diff: B, E
         # probas B, E, O
@@ -88,8 +104,8 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
 
         correctness = torch.argmax(probas, dim=2) == labels
 
-        correct_entropy = torch.masked_select(entrop, correctness)    
-        correct_difficulty = torch.masked_select(difficulty, correctness)    
+        correct_difficulty = torch.masked_select(difficulty, correctness)
+        correct_entropy = torch.masked_select(entrop, correctness)
 
         incorrect_entropy = torch.masked_select(entrop, ~correctness)
         incorrect_difficulty = torch.masked_select(difficulty, ~correctness)
@@ -147,6 +163,9 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
 
             probas = output.logits.softmax(dim = 2)
             confidence, prediction = probas.max(dim=2)
+
+            if "top2" in self.abst_method:
+                output.loss += self.loss_top2(probas, labels)
 
             if "difficulty" in self.abst_method:
                 output.loss += self.loss_difficulty(difficulty, probas, labels)
