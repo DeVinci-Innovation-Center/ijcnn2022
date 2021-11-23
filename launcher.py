@@ -33,7 +33,7 @@ def launch(dataset, method, lamb, batch_size=8, model="bert-base-uncased", out='
     if freeze:
         model_args += ' --freeze'
     method_args= f'--lamb={lamb} --abstention_method {method} --mc {mc} --num_train_epochs {epochs}'
-    other_args = f'--output_dir {out} --do_train --do_eval --n_gpu 1'
+    other_args = f'--output_dir {out} --do_train --do_eval'
 
     line = f'{sys.executable} ner_test.py {dataset_args} {meta_args} {method_args} {model_args} {other_args}'
     print(line)

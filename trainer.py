@@ -2,6 +2,7 @@ from transformers import Trainer
 from transformers import TrainingArguments
 from typing import Dict, Union, Any
 from torch.nn.modules.module import Module
+from torch.nn import DataParallel
 import torch
 
 class CustomTrainer(Trainer):
@@ -22,21 +23,26 @@ class CustomTrainer(Trainer):
             p.requires_grad = not frozen
 
     def training_step_last_only(self, model: Module, inputs: Dict[str, Union[torch.Tensor, Any]]):
-        abst_method = model.abst_method
+        if isinstance(model, DataParallel):
+            obj = model.model
+        else:
+            obj = model
+
+        abst_method = obj.abst_method
         model.train()
         inputs = self._prepare_inputs(inputs)
 
         # First pass
-        self.set_freeze(model, False)
-        model.abst_method = 'raw' # regularizer disabled
+        self.set_freeze(obj, False)
+        obj.abst_method = 'raw' # regularizer disabled
         loss = self.compute_loss(model, inputs)
         if self.args.n_gpu > 1:
             loss = loss.mean()
         loss.backward()
 
         # Second pass, only regulation on last layer
-        self.set_freeze(model, True)
-        model.abst_method = abst_method # restore regularizer
+        self.set_freeze(obj, True)
+        obj.abst_method = abst_method # restore regularizer
         loss = self.compute_loss(model, inputs)
         if self.args.n_gpu > 1:
             loss = loss.mean()
