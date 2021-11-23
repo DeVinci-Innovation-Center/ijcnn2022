@@ -589,6 +589,7 @@ def main():
         tokenizer=tokenizer,
         data_collator=data_collator,
         compute_metrics=compute_metrics,
+        abst_method=model_args.abstention_method
     )
 
     # Training
