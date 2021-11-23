@@ -7,15 +7,15 @@ def entropy(ten: torch.Tensor, dim: int):
     return -1 * torch.sum(ten.log()*ten, dim=dim)
 
 class AbstentionBertForTokenClassification(BertForTokenClassification):
-    def __init__(self, config, abst_meth: str, lamb: float = 5e-2, mc_samples = 10):
+    def __init__(self, config, abst_meth: str, lamb: float = 5e-2, mc_samples = 10, hidden_layers = 0):
         super().__init__(config)
         self.lamb = lamb
         self.abst_method = abst_meth
         self.mc_samples = mc_samples
         self.uth = 5e-4 # FIXME too high: loss crash, moving average?
         self.register_parameter("beta", nn.parameter.Parameter(torch.tensor(1.), requires_grad=True))
-        # self.register_parameter("lamb", nn.parameter.Parameter(torch.tensor(0.025), requires_grad=True))
-
+        
+        self.classifier = nn.Linear(config.hidden_size, config.num_labels) if hidden_layers == 0 else nn.Sequential(nn.Linear(config.hidden_size, 128), *[ nn.Linear(128, 128) for i in range(hidden_layers - 1)], nn.Linear(128, config.num_labels))
 
     def loss_miss_labels_recall(self, confidence, prediction, labels):
         O_LABEL = 0 # O label lebel int

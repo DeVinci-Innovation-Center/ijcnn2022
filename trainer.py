@@ -13,7 +13,7 @@ class CustomTrainer(Trainer):
         self.eval_dataset  = kwargs['eval_dataset']
         self.tokenizer     = kwargs['tokenizer']
 
-        self.training_step = self.training_step_normal
+        self.training_step = self.training_step_last_only
 
 
     def set_freeze(self, model, frozen):

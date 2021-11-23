@@ -75,6 +75,10 @@ class ModelArguments:
         default=5e-2, 
         metadata={'help': "When abstention_method is set to immediate, used to scale the regularisation loss"}
     )
+    hidden_layers: Optional[int] = field(
+        default=0, 
+        metadata={'help': "The number of hidden layers in the classifier."}
+    )
     mc: Optional[int] = field(
         default=1, 
         metadata={'help': "Number of MC dropout samples"}
@@ -372,7 +376,7 @@ def main():
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
-    model = AbstentionBertForTokenClassification(config, abst_meth = model_args.abstention_method, lamb = model_args.lamb, mc_samples=model_args.mc)
+    model = AbstentionBertForTokenClassification(config, abst_meth = model_args.abstention_method, lamb = model_args.lamb, mc_samples=model_args.mc, hidden_layers=model_args.hidden_layers)
     model.load_state_dict(model_auto.state_dict(), strict=False)
 
     if model_args.freeze:
