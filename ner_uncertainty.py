@@ -182,7 +182,11 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
                 output.loss = self.loss_avuc(probas, confidence, prediction, labels)
 
             if "immediate" in self.abst_method:
-                output.loss = self.loss_abstention(confidence, prediction, labels)
+                l = self.loss_abstention(confidence, prediction, labels)
+                if l == 0:
+                    output.loss = output.loss * 0 # Neutralize loss if no modification
+                else:
+                    output.loss = l # apply regularizer
 
             if self.abst_method == "history":
                  if self.training:
