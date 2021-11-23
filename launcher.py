@@ -29,7 +29,7 @@ def launch(dataset, method, lamb, batch_size=8, model="bert-base-uncased", out='
 
 
     meta_args  = f'--save_strategy no --save_steps 0 --dataloader_num_workers 24 --per_device_train_batch_size {batch_size}'
-    model_args = f'--model_name_or_path {model}'
+    model_args = f'--model_name_or_path {model} --hidden_layers {hidden}'
     if freeze:
         model_args += ' --freeze'
     method_args= f'--lamb={lamb} --abstention_method {method} --mc {mc} --num_train_epochs {epochs}'
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--freeze', action='store_true', default=False, help="Freeze BERT model")
     parser.add_argument('-s', '--mc_samples', type=int, default=1, help="Number of MC Dropout Samples")
     parser.add_argument('-e', '--epochs', type=int, help="Number of training epochs.", default=3)
-    parser.add_argument('-m', '--hidden_layers', type=int, default=0, help="Number of hidden layers")
+    parser.add_argument('-x', '--hidden_layers', type=int, default=0, help="Number of hidden layers")
 
     args = parser.parse_args()
     if args.dataset == 'cycle':

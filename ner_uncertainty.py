@@ -16,6 +16,7 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
         self.register_parameter("beta", nn.parameter.Parameter(torch.tensor(1.), requires_grad=True))
         
         self.classifier = nn.Linear(config.hidden_size, config.num_labels) if hidden_layers == 0 else nn.Sequential(nn.Linear(config.hidden_size, 128), *[ nn.Linear(128, 128) for i in range(hidden_layers - 1)], nn.Linear(128, config.num_labels))
+        self.init_weights()
 
     def loss_miss_labels_recall(self, confidence, prediction, labels):
         O_LABEL = 0 # O label lebel int
