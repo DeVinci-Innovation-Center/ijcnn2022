@@ -10,12 +10,15 @@ class CustomTrainer(Trainer):
         super().__init__(*args, **kwargs)
         self.training_args: TrainingArguments = kwargs['args']
         self.model = kwargs['model']
-        self.abst_method   = kwargs['abst_method']
         self.train_dataset = kwargs['train_dataset']
         self.eval_dataset  = kwargs['eval_dataset']
         self.tokenizer     = kwargs['tokenizer']
 
-        self.training_step = self.training_step_normal if self.abst_method == "raw" else self.training_step_last_only
+        if isinstance(self.model, DataParallel):
+            obj = self.model.model
+        else:
+            obj = self.model
+        self.training_step = self.training_step_normal if obj.abst_method == "raw" else self.training_step_last_only
 
 
     def set_freeze(self, model, frozen):
