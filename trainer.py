@@ -51,6 +51,11 @@ class CustomTrainer(Trainer):
             loss = loss.mean()
         loss.backward()
 
+        # We just backpropagated twice on the final classifier but once only on the upstream language model
+        # We /2 the classifier grad to break even
+        for p in obj.classifier.parameters():
+            p.grad /= 2.
+
         return loss.detach()
 
     def training_step_normal(self, model: Module, inputs: Dict[str, Union[torch.Tensor, Any]]):
