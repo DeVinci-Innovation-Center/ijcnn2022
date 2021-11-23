@@ -28,11 +28,11 @@ def launch(dataset, method, lamb, batch_size=8, model="bert-base-uncased", out='
             dataset_args += ' --dataset_config_name supervised'
 
 
-    meta_args  = f'--save_strategy no --save_steps 0 --no_dataloader_pin_memory --dataloader_num_workers 24 --per_device_train_batch_size {batch_size}'
+    meta_args  = f'--save_strategy no --save_steps 0 --dataloader_num_workers 24 --per_device_train_batch_size {batch_size}'
     model_args = f'--model_name_or_path {model}'
     if freeze:
         model_args += ' --freeze'
-    method_args= f'--lamb={lamb} --abstention_method {method} --mc {mc} --num_train_epochs {epochs} '
+    method_args= f'--lamb={lamb} --abstention_method {method} --mc {mc} --num_train_epochs {epochs}'
     other_args = f'--output_dir {out} --do_train --do_eval'
 
     line = f'{sys.executable} ner_test.py {dataset_args} {meta_args} {method_args} {model_args} {other_args}'

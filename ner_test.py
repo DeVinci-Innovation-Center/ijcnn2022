@@ -26,6 +26,7 @@ import sys
 from dataclasses import dataclass, field
 from typing import Optional
 
+from trainer import CustomTrainer
 import datasets
 import numpy as np
 from datasets import ClassLabel, load_dataset, load_metric
@@ -576,7 +577,7 @@ def main():
             }
 
     # Initialize our Trainer
-    trainer = Trainer(
+    trainer = CustomTrainer(
         model=model,
         args=training_args,
         train_dataset=train_dataset if training_args.do_train else None,

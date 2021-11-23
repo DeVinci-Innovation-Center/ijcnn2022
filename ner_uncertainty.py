@@ -48,6 +48,7 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
         correctness = (prediction == labels)
         correct_confidence = torch.masked_select(confidence, correctness)
         wrong_confidence = torch.masked_select(confidence, ~correctness)
+        
         regularizer = 0
         for cc in correct_confidence:
             for wc in wrong_confidence:
@@ -85,14 +86,14 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
         correctness = torch.argmax(probas, dim=2) == labels
 
         cert = torch.topk(probas, 2, 2).values # batch, samples, 2
-        cert = (1 - (cert[:,:,0] - cert[:,:,1])) + (1 - cert[:,:,0])
-        cert_false = probas.std(2) + torch.pow((1/probas.shape[2] - probas.max(2).values), 2) #2 - cert
+        cert = (1 - cert[:,:,0]) # (1 - (cert[:,:,0] - cert[:,:,1]))
+        cert_false = torch.pow((1/probas.shape[2] - probas.max(2).values), 2) #probas.std(2) #2 - cert
 
         l    = torch.sum(torch.masked_select(cert, correctness))
         lf   = torch.sum(torch.masked_select(cert_false, ~correctness))
 
-        # print(l)
-        # print(lf)
+        # print(f'l={l}')
+        # print(f'lf={lf}')
         # exit(0)
 
         return self.lamb * (l + lf)
@@ -165,22 +166,22 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
             confidence, prediction = probas.max(dim=2)
 
             if "top2" in self.abst_method:
-                output.loss += self.loss_top2(probas, labels)
+                output.loss = self.loss_top2(probas, labels)
 
             if "difficulty" in self.abst_method:
-                output.loss += self.loss_difficulty(difficulty, probas, labels)
+                output.loss = self.loss_difficulty(difficulty, probas, labels)
 
             if "entrop" in self.abst_method:
-                output.loss += self.loss_abstention_entropy(probas, labels)
+                output.loss = self.loss_abstention_entropy(probas, labels)
 
             if "recall" in self.abst_method:
-                output.loss += self.loss_miss_labels_recall(confidence, prediction, labels)
+                output.loss = self.loss_miss_labels_recall(confidence, prediction, labels)
 
             if "avuc" in self.abst_method:
-                output.loss += self.loss_avuc(probas, confidence, prediction, labels)
+                output.loss = self.loss_avuc(probas, confidence, prediction, labels)
 
             if "immediate" in self.abst_method:
-                output.loss += self.loss_abstention(confidence, prediction, labels)
+                output.loss = self.loss_abstention(confidence, prediction, labels)
 
             if self.abst_method == "history":
                  if self.training:
