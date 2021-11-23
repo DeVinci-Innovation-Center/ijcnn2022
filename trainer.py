@@ -15,7 +15,7 @@ class CustomTrainer(Trainer):
         self.tokenizer     = kwargs['tokenizer']
 
         if isinstance(self.model, DataParallel):
-            obj = self.model.model
+            obj = self.model.module
         else:
             obj = self.model
         self.training_step = self.training_step_normal if obj.abst_method == "raw" else self.training_step_last_only
@@ -27,7 +27,7 @@ class CustomTrainer(Trainer):
 
     def training_step_last_only(self, model: Module, inputs: Dict[str, Union[torch.Tensor, Any]]):
         if isinstance(model, DataParallel):
-            obj = model.model
+            obj = model.module
         else:
             obj = model
 
