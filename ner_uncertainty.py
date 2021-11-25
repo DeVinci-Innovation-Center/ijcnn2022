@@ -3,6 +3,16 @@ from transformers.models.bert import BertForTokenClassification
 import torch.nn as nn
 import torch
 
+class PrinterLayer(nn.Module):
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def forward(self, x):
+        print(x)
+        print(x.shape)
+        return x
+
 def entropy(ten: torch.Tensor, dim: int):
     return -1 * torch.sum(ten.log()*ten, dim=dim)
 
@@ -86,12 +96,12 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
     def loss_top2(self, probas, labels):
         correctness = torch.argmax(probas, dim=2) == labels
 
-        cert = torch.topk(probas, 2, 2).values # batch, samples, 2
-        cert = (1 - cert[:,:,0]) # (1 - (cert[:,:,0] - cert[:,:,1]))
+        cert = torch.topk(probas, 2, -1).values # batch, samples, 2
+        cert = 1 - cert[:,:,0] # (1 - (cert[:,:,0] - cert[:,:,1]))
         cert_false = torch.pow((1/probas.shape[2] - probas.max(2).values), 2) #probas.std(2) #2 - cert
 
         l    = torch.sum(torch.masked_select(cert, correctness))
-        lf   = torch.sum(torch.masked_select(cert_false, ~correctness))
+        lf   = 0. #torch.sum(torch.masked_select(cert_false, ~correctness))
 
         # print(f'l={l}')
         # print(f'lf={lf}')
