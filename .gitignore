@@ -1,4 +1,6 @@
 test/
+test_run2/
+test_run3/
 __pycache__/
 models/
 save/

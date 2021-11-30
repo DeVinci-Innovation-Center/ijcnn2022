@@ -5,11 +5,12 @@ import datetime
 import os
 import sys
 import shutil
+import random
 
 DATASETS = ['conll2003', 'ncbi_disease', 'wikiann', 'GUM', 'wnut_17']
 
 
-def launch(dataset, method, lamb, batch_size=8, model="bert-base-uncased", out='test/latest', freeze=False, mc=1, epochs=3, hidden=0):
+def launch(dataset, method, lamb, batch_size=8, model="bert-base-uncased", out='test/latest', freeze=False, mc=1, epochs=3, hidden=0, width=0):
 #    	python3 ner_test.py --save_strategy epoch 
 # --lamb=${LAMB} --per_device_train_batch_size ${BATCH_SIZE} 
 # --model_name_or_path bert-base-uncased --abstention_method immediate 
@@ -29,11 +30,11 @@ def launch(dataset, method, lamb, batch_size=8, model="bert-base-uncased", out='
 
 
     meta_args  = f'--save_strategy no --save_steps 0 --dataloader_num_workers 24 --per_device_train_batch_size {batch_size}'
-    model_args = f'--model_name_or_path {model} --hidden_layers {hidden}'
+    model_args = f'--model_name_or_path {model} --hidden_layers {hidden} --width {width}'
     if freeze:
         model_args += ' --freeze'
     method_args= f'--lamb={lamb} --abstention_method {method} --mc {mc} --num_train_epochs {epochs}'
-    other_args = f'--output_dir {out} --do_train --do_eval'
+    other_args = f'--output_dir {out} --do_train --do_eval --seed {random.randint(2, 200)}'
 
     line = f'{sys.executable} ner_test.py {dataset_args} {meta_args} {method_args} {model_args} {other_args}'
     print(line)
@@ -54,11 +55,12 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--mc_samples', type=int, default=1, help="Number of MC Dropout Samples")
     parser.add_argument('-e', '--epochs', type=int, help="Number of training epochs.", default=3)
     parser.add_argument('-x', '--hidden_layers', type=int, default=0, help="Number of hidden layers")
+    parser.add_argument('-w', '--width', type=int, default=128, help="Num of hidden neurons per hidden layers")
 
     args = parser.parse_args()
     if args.dataset == 'cycle':
         for dataset in DATASETS:
             #for lamb in linspace(...)
-            launch(dataset, args.method, args.lamb, out=f'{args.output}/{dataset}', batch_size=args.batch_size, freeze=args.freeze, mc=args.mc_samples, epochs=args.epochs, hidden=args.hidden_layers)
+            launch(dataset, args.method, args.lamb, out=f'{args.output}/{dataset}', batch_size=args.batch_size, freeze=args.freeze, mc=args.mc_samples, epochs=args.epochs, hidden=args.hidden_layers, width=args.width)
     else:
-        launch(args.dataset, args.method, args.lamb, out=args.output, batch_size=args.batch_size, freeze=args.freeze, mc=args.mc_samples, epochs=args.epochs, hidden=args.hidden_layers)
+        launch(args.dataset, args.method, args.lamb, out=args.output, batch_size=args.batch_size, freeze=args.freeze, mc=args.mc_samples, epochs=args.epochs, hidden=args.hidden_layers, width=args.width)

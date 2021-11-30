@@ -17,7 +17,7 @@ def entropy(ten: torch.Tensor, dim: int):
     return -1 * torch.sum(ten.log()*ten, dim=dim)
 
 class AbstentionBertForTokenClassification(BertForTokenClassification):
-    def __init__(self, config, abst_meth: str, lamb: float = 5e-2, mc_samples = 10, hidden_layers = 0):
+    def __init__(self, config, abst_meth: str, lamb: float = 5e-2, mc_samples = 10, hidden_layers = 0, width = 128):
         super().__init__(config)
         self.lamb = lamb
         self.abst_method = abst_meth
@@ -25,7 +25,11 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
         self.uth = 5e-4 # FIXME too high: loss crash, moving average?
         self.register_parameter("beta", nn.parameter.Parameter(torch.tensor(1.), requires_grad=True))
         
-        self.classifier = nn.Linear(config.hidden_size, config.num_labels) if hidden_layers == 0 else nn.Sequential(nn.Linear(config.hidden_size, 128), *[ nn.Linear(128, 128) for i in range(hidden_layers - 1)], nn.Linear(128, config.num_labels))
+        self.classifier = nn.Linear(config.hidden_size, config.num_labels) if hidden_layers == 0 else nn.Sequential(
+            nn.Linear(config.hidden_size, width), 
+            *[ nn.Sequential(nn.Linear(width, width), nn.Dropout(p=.2), nn.ReLU()) for i in range(hidden_layers - 1) ], 
+            nn.Linear(width, config.num_labels)
+        )
         self.init_weights()
 
     def loss_miss_labels_recall(self, confidence, prediction, labels):

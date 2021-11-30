@@ -79,6 +79,10 @@ class ModelArguments:
         default=0, 
         metadata={'help': "The number of hidden layers in the classifier."}
     )
+    width: Optional[int] = field(
+        default=128,
+        metadata={'help': "Number of hidden neurons per hidden layer."}
+    )
     mc: Optional[int] = field(
         default=1, 
         metadata={'help': "Number of MC dropout samples"}
@@ -376,7 +380,7 @@ def main():
         revision=model_args.model_revision,
         use_auth_token=True if model_args.use_auth_token else None,
     )
-    model = AbstentionBertForTokenClassification(config, abst_meth = model_args.abstention_method, lamb = model_args.lamb, mc_samples=model_args.mc, hidden_layers=model_args.hidden_layers)
+    model = AbstentionBertForTokenClassification(config, abst_meth = model_args.abstention_method, lamb = model_args.lamb, mc_samples=model_args.mc, hidden_layers=model_args.hidden_layers, width=model_args.width)
     model.load_state_dict(model_auto.state_dict(), strict=False)
 
     if model_args.freeze:
