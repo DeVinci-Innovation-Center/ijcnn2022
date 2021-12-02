@@ -4,8 +4,8 @@ import json
 import math
 
 
-DATASETS = ['conll2003', 'GUM', 'wikiann', 'wnut_17']
-DATASETS = ['ncbi_disease']
+DATASETS = ['conll2003', 'GUM', 'wikiann', 'wnut_17', 'ncbi_disease']
+# DATASETS = ['GUM']
 DATASET_COLOR = {'conll2003': '#481D24', 
                  'GUM': '#E9724C',
                  'ncbi_disease': 'red', 
@@ -48,22 +48,23 @@ for d in DATASETS:
     # )
     tx = X[0] + .3
     ty = r[d][0]
-    ax.text(
-        tx,
-        ty,
-        " " + line.get_label(),
-        family="Roboto Condensed",
-        size="large",
-        bbox=dict(facecolor="white", edgecolor="None", alpha=0.85),
-        color=line.get_color(),
-        ha="center",
-        va="center",
-        rotation=0.,
-    )
+    # ax.text(
+    #     tx,
+    #     ty,
+    #     " " + line.get_label(),
+    #     family="Roboto Condensed",
+    #     size="large",
+    #     bbox=dict(facecolor="white", edgecolor="None", alpha=0.85),
+    #     color=line.get_color(),
+    #     ha="center",
+    #     va="center",
+    #     rotation=0.,
+    # )
 
 plt.title("Calibration w.r.t Classifier Size", fontname="DejaVu", fontweight="bold", fontdict={"size": "20"})
 plt.xlabel("Classifier Size", fontdict={'size': 'large'})
 plt.xticks(X)
+plt.legend()
 plt.ylabel("Calibration (ECE)", fontdict={'size': 'large'})
 plt.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
 plt.tight_layout()

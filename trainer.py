@@ -54,18 +54,23 @@ class CustomTrainer(Trainer):
             loss = loss.mean()
         loss.backward()
 
-        batch_size, seq_len = inputs["input_ids"].shape
-        noise = torch.cuda.FloatTensor(batch_size, seq_len, 768).normal_()
-        probas = obj.classifier(noise).softmax(2)
-        loss = torch.pow((1/probas.shape[2] - probas.max(2).values), 2).sum()
-        if self.args.n_gpu > 1:
-            loss = loss.mean()
-        loss.backward()
 
-        # We just backpropagated 3 times on the final classifier but once only on the upstream language model
+        ##! WARNING WARNING WARNING WARNING WARNING WARNING 
+        ##! WARNING WARNING WARNING WARNING WARNING WARNING 
+        ##! WARNING WARNING WARNING WARNING WARNING WARNING
+
+        # batch_size, seq_len = inputs["input_ids"].shape
+        # noise = torch.cuda.FloatTensor(batch_size, seq_len, 768).normal_()
+        # probas = obj.classifier(noise).softmax(2)
+        # loss = torch.pow((1/probas.shape[2] - probas.max(2).values), 2).sum()
+        # if self.args.n_gpu > 1:
+        #     loss = loss.mean()
+        # loss.backward()
+
+        # We just backpropagated 2 times on the final classifier but once only on the upstream language model
         # We /2 the classifier grad to break even
         for p in obj.classifier.parameters():
-            p.grad /= 3.
+            p.grad /= 2.
 
         return loss.detach()
 

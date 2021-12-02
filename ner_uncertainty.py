@@ -27,7 +27,7 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
         
         self.classifier = nn.Linear(config.hidden_size, config.num_labels) if hidden_layers == 0 else nn.Sequential(
             nn.Linear(config.hidden_size, width), 
-            *[ nn.Sequential(nn.Linear(width, width), nn.Dropout(p=.2), nn.ReLU()) for i in range(hidden_layers - 1) ], 
+            *[ nn.Sequential(nn.Linear(width, width), nn.ReLU()) for i in range(hidden_layers - 1) ], 
             nn.Linear(width, config.num_labels)
         )
         self.init_weights()
