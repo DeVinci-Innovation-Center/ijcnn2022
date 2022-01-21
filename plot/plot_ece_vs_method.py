@@ -4,24 +4,27 @@ import json
 import math
 
 
-DATASETS = ['conll2003', 'GUM', 'wikiann', 'wnut_17']
-DATASETS = ['conll2003', 'GUM']
-METHODS = ['immediate_noise', 'immediate_no_noise']
+DATASETS = ['conll2003', 'GUM', 'wikiann', 'wnut_17', 'ncbi_disease']
+DATASETS = ['ncbi_disease']
+METHODS = ['immediate_noise_{layer}hidden', 'immediate_no_noise_{layer}hidden', 'immediate_noise_{layer}hidden_64width'] # 'immediate_noise_{layer}hidden_256width'
 DATASET_COLOR = {'conll2003': '#481D24', 
                  'GUM': '#E9724C',
                  'ncbi_disease': 'red', 
                  'wikiann': '#C5283D', 
                  'wnut_17': '#255F85'}
 
-X = [1, 2, 3, 4]
+X = [1, 2, 3, 4, 5, 6]
 
 def read_ece():
-    results_per_method_per_dataset = {m: {d:[] for d in DATASETS} for m in METHODS}
+    results_per_method_per_dataset = {m: {d: [] for d in DATASETS} for m in METHODS}
+
+
 
     for dataset in DATASETS:
         for method in METHODS:
             for num in X:
-                with open(f'../test_run3/{method}_{num}hidden/{dataset}/all_results.json') as fh:
+                label = method.format(layer=num)
+                with open(f'../save/test_save_pour_pas_suppr/{label}/{dataset}/all_results.json') as fh:
                     results = json.loads(fh.read())
                     results_per_method_per_dataset[method][dataset].append(results['eval_ece'])
     return results_per_method_per_dataset
@@ -37,6 +40,7 @@ ax.spines['right'].set_visible(False)
 # ax.spines['left'].set_visible(False)
 
 def method_label(m):
+    m = m.replace("{layer}hidden", "")
     return m.replace("_", " ").replace("immediate", "abstention")
 
 for m in METHODS:
@@ -68,9 +72,10 @@ for m in METHODS:
         #     rotation=0.,
         # )
 
-plt.title("Calibration / Methods and Classifier Size", fontname="DejaVu", fontweight="bold")
-plt.xlabel("Classifier Size", fontdict={'size': 'large'})
-plt.xticks([1., 2., 3., 4.])
+# plt.title("Calibration / Methods and Classifier Size", fontname="DejaVu", fontweight="bold")
+# plt.title("Calibration / Methods and Classifier Size", fontname="DejaVu", fontweight="bold", fontdict={"size": "20"})
+plt.xlabel("Classifier Layers", fontdict={'size': 'large'})
+plt.xticks(X)
 plt.ylabel("Calibration (ECE)", fontdict={'size': 'large'})
 plt.ticklabel_format(axis="y", style="sci", scilimits=(0,0))
 plt.tight_layout()

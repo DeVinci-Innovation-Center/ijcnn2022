@@ -12,14 +12,14 @@ DATASET_COLOR = {'conll2003': '#481D24',
                  'wikiann': '#C5283D', 
                  'wnut_17': '#255F85'}
 
-X = [1, 2, 3, 4, 5, 6, 7, 8]
+X = [1, 2, 3, 4, 5, 6, 7]
 
 def read_ece():
     results_per_dataset = {d: [] for d in DATASETS}
 
     for num in X:
         for dataset in DATASETS:
-            with open(f'../test/immediate_noise_{num}hidden/{dataset}/all_results.json') as fh:
+            with open(f'../save/test_save_pour_pas_suppr/immediate_noise_{num}hidden/{dataset}/all_results.json') as fh:
                 results = json.loads(fh.read())
                 results_per_dataset[dataset].append(results['eval_ece'])
     return results_per_dataset
@@ -61,7 +61,7 @@ for d in DATASETS:
     #     rotation=0.,
     # )
 
-plt.title("Calibration w.r.t Classifier Size", fontname="DejaVu", fontweight="bold", fontdict={"size": "20"})
+# plt.title("Calibration w.r.t Classifier Size", fontname="DejaVu", fontweight="bold", fontdict={"size": "20"})
 plt.xlabel("Classifier Size", fontdict={'size': 'large'})
 plt.xticks(X)
 plt.legend()

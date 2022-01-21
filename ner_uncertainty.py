@@ -71,8 +71,8 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
         return self.lamb * regularizer
 
     def loss_avuc(self, probas: torch.Tensor, confidence: torch.Tensor, prediction: torch.Tensor, labels: torch.Tensor):
-        # uncertainty = 1 - confidence #? can also use other methods: entropy variance etc...
-        uncertainty = entropy(probas, 2) # Probas is (B, S, P)
+        uncertainty = 1 - confidence #? can also use other methods: entropy variance etc...
+        # uncertainty = entropy(probas, 2) # Probas is (B, S, P)
         self.uth = uncertainty.median() * self.lamb #1e-1
 
         correctness = (prediction == labels)
