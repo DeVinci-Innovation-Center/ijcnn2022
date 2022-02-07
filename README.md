@@ -1,4 +1,4 @@
-# Applying Art Of Absention to Name Entity Recognition
+# Gradient accumulation for NER
 
 ## Quickstart
 

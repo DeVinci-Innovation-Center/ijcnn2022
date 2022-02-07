@@ -10,7 +10,7 @@ function launch () {
     num=$1
     echo Launching ner$1 on gpu $(($((${num}-1))/2))
     screen -dmS ner$1
-    num=$1 bash -c 'screen -S ner${num} -X stuff $"CUDA_VISIBLE_DEVICES=$(($((${num}-1))/2)) python3.8 launcher.py -d cycle -m avuc -l 0.025 -o test/avuc_${num}hidden_128width -b 3 -s 2 -x ${num} -w 128 -e 10\n"'
+    num=$1 bash -c 'screen -S ner${num} -X stuff $"CUDA_VISIBLE_DEVICES=$(($((${num}-1))/2)) python3.8 launcher.py -d cycle -m noise -l 0.05 -o test/combine_avuc_${num}hidden_128width_5e-2 -b 3 -s 2 -x ${num} -w 128 -e 10\n"'
 }
 
 term 1

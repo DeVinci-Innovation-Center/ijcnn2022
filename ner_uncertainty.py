@@ -173,6 +173,8 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
         # outputs: [Batch_norm, SequenceLength, NClasses]
         output = TokenClassifierOutput(mean_loss, mean_logits)
         
+        loss_save = mean_loss if 'combine' in self.abst_method else 0. 
+
         if labels is not None:
             # difficulty = torch.stack([entropy(i.logits.softmax(dim = 2), dim=2) for i in mc_samples]).std(0)
             difficulty = torch.stack([i.logits for i in mc_samples]).std(0).sum(2)
@@ -228,5 +230,6 @@ class AbstentionBertForTokenClassification(BertForTokenClassification):
 
         # print(f'{self.beta} {self.lamb}')
 
+        output.loss += loss_save
         return output
 

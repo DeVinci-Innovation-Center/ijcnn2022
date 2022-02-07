@@ -16,8 +16,10 @@ def launch(dataset, method, lamb, batch_size=8, model="bert-base-uncased", out='
 # --model_name_or_path bert-base-uncased --abstention_method immediate 
 # --dataset_name ${DATASET} --output_dir ./test/test-ner-immediate --do_train --do_eval
 
-    if os.path.isdir(f'test/latest'):
-        shutil.rmtree('test/latest')
+    if os.path.isdir(out):
+        print("Skipping as output exists")
+        return
+        #shutil.rmtree('test/latest')
 
     if os.path.isdir(f'datasets/{dataset}'):
         dataset_args = f'--train_file datasets/{dataset}/train.json --validation_file datasets/{dataset}/test.json'

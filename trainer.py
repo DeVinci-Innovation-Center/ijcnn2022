@@ -38,40 +38,51 @@ class CustomTrainer(Trainer):
         model.train()
         inputs = self._prepare_inputs(inputs)
 
+
+        count = 0
+
         # First pass
-        self.set_freeze(obj, False)
-        obj.abst_method = 'raw' # regularizer disabled
-        loss = self.compute_loss(model, inputs)
-        if self.args.n_gpu > 1:
-            loss = loss.mean()
-        loss.backward()
+        if 'combine' not in abst_method:
+            self.set_freeze(obj, False)
+            obj.abst_method = 'raw' # regularizer disabled
+            loss = self.compute_loss(model, inputs)
+            if self.args.n_gpu > 1:
+                loss = loss.mean()
+            loss.backward(); count+= 1
+
 
         # Second pass, only regulation on last layer
-        self.set_freeze(obj, True)
-        obj.abst_method = abst_method # restore regularizer
-        loss = self.compute_loss(model, inputs)
-        if self.args.n_gpu > 1:
-            loss = loss.mean()
-        loss.backward()
+        if 'noise' not in abst_method:
+            self.set_freeze(obj, 'unfrozen' not in abst_method)
+            obj.abst_method = abst_method 
+            loss = self.compute_loss(model, inputs)
+            if self.args.n_gpu > 1:
+                loss = loss.mean()
+            loss.backward(); count += 1
 
 
         ##! WARNING WARNING WARNING WARNING WARNING WARNING 
         ##! WARNING WARNING WARNING WARNING WARNING WARNING 
         ##! WARNING WARNING WARNING WARNING WARNING WARNING
 
-        # batch_size, seq_len = inputs["input_ids"].shape
-        # noise = torch.cuda.FloatTensor(batch_size, seq_len, 768).normal_()
-        # probas = obj.classifier(noise).softmax(2)
-        # loss = torch.pow((1/probas.shape[2] - probas.max(2).values), 2).sum()
-        # if self.args.n_gpu > 1:
-        #     loss = loss.mean()
-        # loss.backward()
+
+        if 'noise' in abst_method:
+            self.set_freeze(obj, True)
+            batch_size, seq_len = inputs["input_ids"].shape
+            noise = torch.cuda.FloatTensor(batch_size, seq_len, 768).normal_()
+            probas = obj.classifier(noise).softmax(2)
+            loss = torch.pow((1/probas.shape[2] - probas.max(2).values), 2).sum()
+            if self.args.n_gpu > 1:
+                loss = loss.mean()
+            loss.backward(); count += 1
 
         # We just backpropagated 2 times on the final classifier but once only on the upstream language model
         # We /2 the classifier grad to break even
         for p in obj.classifier.parameters():
-            p.grad /= 2.
+            p.grad /= float(count)
 
+        #: WARN
+        
         return loss.detach()
 
     def training_step_normal(self, model: Module, inputs: Dict[str, Union[torch.Tensor, Any]]):
