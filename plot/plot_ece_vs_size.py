@@ -1,8 +1,16 @@
 from os import read
 import matplotlib.pyplot as plt
+import matplotlib
 import json
 import math
 
+matplotlib.use("pgf")
+matplotlib.rcParams.update({
+    "pgf.texsystem": "pdflatex",
+    'font.family': 'serif',
+    'text.usetex': True,
+    'pgf.rcfonts': False,
+})
 
 DATASETS = ['conll2003', 'GUM', 'wikiann', 'wnut_17', 'ncbi_disease']
 # DATASETS = ['GUM']
@@ -73,4 +81,4 @@ plt.tight_layout()
 # ax.text(9.1, 0.185, "< Optimal Depth", color="#525252", size="large")
 
 
-plt.savefig("img.png")
+
